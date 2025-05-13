@@ -2,6 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const routes = require("./routes");
 
+console.log("DEBUG: Tipo do objeto 'routes' importado em app.js:", typeof routes);
+if (typeof routes === 'function' && routes.stack) {
+    console.log("DEBUG: 'routes' parece ser um router Express com", routes.stack.length, "camadas de middleware/rotas.");
+} else {
+    console.log("DEBUG: 'routes' NÃO parece ser um router Express válido ou está vazio.", routes);
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
