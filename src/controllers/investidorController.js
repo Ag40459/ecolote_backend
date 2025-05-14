@@ -25,7 +25,7 @@ const criarInvestidor = async (req, res) => {
     // nome_investidor, email_investidor, telefone_investidor, tipo_investidor, valor_interesse_investimento
     // cidade_investidor e estado_investidor foram adicionados e podem ser opcionais ou obrigatórios dependendo da sua regra de negócio.
     // Vamos assumir que o frontend envia todos eles se forem parte do formulário.
-    if (!nome || !email || !telefone || !tipo_investidor || !valor_investimento || !cidade || !estado) {
+    if (!nome || !email || !telefone || !valor_investimento || !cidade || !estado) {
         return res.status(400).json({ message: "Todos os campos obrigatórios (nome, email, telefone, tipo_investidor, valor_investimento, cidade, estado) devem ser preenchidos." });
     }
 
@@ -48,16 +48,25 @@ const criarInvestidor = async (req, res) => {
             .insert([insertData])
             .select(); // Retorna o registro inserido
 
-        if (error) {
-            console.error("Erro ao inserir investidor no Supabase:", error);
-            return res.status(500).json({ 
-                message: "Erro ao salvar os dados do investidor.", 
-                error: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
-        }
+       if (error) {
+    console.error("Erro ao inserir investidor no Supabase:", error);
+
+    // Tratamento específico para e-mail duplicado
+    if (error.code === "23505" && error.message.includes("email_investidor")) {
+        return res.status(400).json({ 
+            message: "Este e-mail já está cadastrado. Tente usar outro ou entre em contato." 
+        });
+    }
+
+    return res.status(500).json({ 
+        message: "Erro ao salvar os dados do investidor.", 
+        error: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+    });
+}
+
 
         res.status(201).json({ message: "Dados do investidor salvos com sucesso!", data: data[0] });
 
