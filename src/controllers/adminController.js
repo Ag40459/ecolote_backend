@@ -48,7 +48,7 @@ const registrarAdmin = async (req, res) => {
         const { data, error: insertError } = await supabase
             .from("administradores")
             .insert([{ nome_completo, email, senha_hash }])
-            .select("id, nome_completo, email, created_at");
+            .select("id, nome_completo, email, data_criacao"); // Alterado de created_at para data_criacao (conforme schema.sql para administradores)
 
         if (insertError) {
             console.error("Erro ao registrar administrador no Supabase:", insertError);
@@ -83,9 +83,6 @@ const loginAdmin = async (req, res) => {
             .single();
 
         if (error || !admin) {
-            // Retornar 200 com uma mensagem específica para o frontend tratar, em vez de 401 direto
-            // para não confundir com falha de autenticação geral.
-            // No entanto, para login, 401 é apropriado se as credenciais não batem.
             return res.status(401).json({ message: "Credenciais inválidas." });
         }
 
@@ -137,19 +134,16 @@ const requestPasswordReset = async (req, res) => {
             .from("administradores")
             .select("email")
             .eq("email", email)
-            .maybeSingle(); // Use maybeSingle para não dar erro se não encontrar, apenas retornar null
+            .maybeSingle(); 
 
-        if (selectError && selectError.code !== 'PGRST116') { // PGRST116: 'Searched item was not found'
+        if (selectError && selectError.code !== 'PGRST116') { 
             console.error("Erro ao verificar email para redefinição de senha:", selectError);
             return res.status(500).json({ emailExists: false, message: "Erro ao verificar o email.", error: selectError.message });
         }
 
         if (existingAdmin) {
-            // Email existe. Nesta fase, não enviamos email, apenas confirmamos a existência.
             return res.status(200).json({ emailExists: true, message: "Se o email estiver cadastrado, um link para redefinição de senha será enviado em breve." });
         } else {
-            // Email não existe, mas retornamos 200 para não dar dica se o email é válido ou não por status code diferente.
-            // A mensagem no frontend tratará a diferença.
             return res.status(200).json({ emailExists: false, message: "Email não cadastrado em nossa base de dados." });
         }
 
@@ -163,7 +157,8 @@ const requestPasswordReset = async (req, res) => {
 // Funções para buscar dados dos formulários (protegidas)
 const buscarPessoasFisicas = async (req, res) => {
     try {
-        const { data, error } = await supabase.from("pessoas_fisicas").select("*").order("created_at", { ascending: false });
+        // Assumindo que pessoas_fisicas também usa data_criacao conforme schema.sql
+        const { data, error } = await supabase.from("pessoas_fisicas").select("*").order("data_criacao", { ascending: false });
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -174,7 +169,8 @@ const buscarPessoasFisicas = async (req, res) => {
 
 const buscarPessoasJuridicas = async (req, res) => {
     try {
-        const { data, error } = await supabase.from("pessoas_juridicas").select("*").order("created_at", { ascending: false });
+        // Corrigido para data_criacao conforme imagem da tabela
+        const { data, error } = await supabase.from("pessoas_juridicas").select("*").order("data_criacao", { ascending: false });
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -185,7 +181,8 @@ const buscarPessoasJuridicas = async (req, res) => {
 
 const buscarInvestidores = async (req, res) => {
     try {
-        const { data, error } = await supabase.from("investidores").select("*").order("created_at", { ascending: false });
+        // Corrigido para data_criacao conforme imagem da tabela
+        const { data, error } = await supabase.from("investidores").select("*").order("data_criacao", { ascending: false });
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -198,9 +195,8 @@ const buscarInvestidores = async (req, res) => {
 module.exports = {
     registrarAdmin,
     loginAdmin,
-    requestPasswordReset, // Adicionar a nova função aqui
+    requestPasswordReset,
     buscarPessoasFisicas,
     buscarPessoasJuridicas,
     buscarInvestidores
 };
-

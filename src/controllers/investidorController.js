@@ -8,40 +8,55 @@ const supabase = require("../config/supabaseClient");
  * @access Public
  */
 const criarInvestidor = async (req, res) => {
+    // Campos esperados do frontend. Ajuste os nomes aqui se o frontend enviar com nomes diferentes.
     const {
-        nome,
-        email,
-        telefone,
-        cidade,
-        estado,
-        valor_investimento
+        nome, // Será mapeado para nome_investidor
+        email, // Será mapeado para email_investidor
+        telefone, // Será mapeado para telefone_investidor
+        tipo_investidor, // direto para tipo_investidor
+        area_interesse_principal, // direto para area_interesse_principal
+        valor_investimento, // Será mapeado para valor_interesse_investimento
+        mensagem_investidor, // direto para mensagem_investidor
+        cidade, // Será mapeado para cidade_investidor
+        estado // Será mapeado para estado_investidor
     } = req.body;
 
-    // Validação básica
-    if (!nome || !email || !telefone || !cidade || !estado || !valor_investimento) {
-        return res.status(400).json({ message: "Todos os campos obrigatórios devem ser preenchidos." });
+    // Validação básica - Baseado no schema.sql e na imagem, os campos NOT NULL são:
+    // nome_investidor, email_investidor, telefone_investidor, tipo_investidor, valor_interesse_investimento
+    // cidade_investidor e estado_investidor foram adicionados e podem ser opcionais ou obrigatórios dependendo da sua regra de negócio.
+    // Vamos assumir que o frontend envia todos eles se forem parte do formulário.
+    if (!nome || !email || !telefone || !tipo_investidor || !valor_investimento || !cidade || !estado) {
+        return res.status(400).json({ message: "Todos os campos obrigatórios (nome, email, telefone, tipo_investidor, valor_investimento, cidade, estado) devem ser preenchidos." });
     }
 
-    // TODO: Adicionar validação de formato para email, telefone, estado (UF)
-
     try {
+        const insertData = {
+            nome_investidor: nome,
+            email_investidor: email,
+            telefone_investidor: telefone,
+            tipo_investidor: tipo_investidor,
+            area_interesse_principal: area_interesse_principal || null, // Permite nulo se não enviado
+            valor_interesse_investimento: valor_investimento,
+            mensagem_investidor: mensagem_investidor || null, // Permite nulo se não enviado
+            cidade_investidor: cidade, 
+            estado_investidor: estado 
+            // data_criacao e data_atualizacao são preenchidas automaticamente pelo banco (DEFAULT now() e triggers)
+        };
+
         const { data, error } = await supabase
             .from("investidores")
-            .insert([
-                {
-                    nome,
-                    email,
-                    telefone,
-                    cidade,
-                    estado,
-                    valor_investimento
-                }
-            ])
-            .select();
+            .insert([insertData])
+            .select(); // Retorna o registro inserido
 
         if (error) {
             console.error("Erro ao inserir investidor no Supabase:", error);
-            return res.status(500).json({ message: "Erro ao salvar os dados do investidor.", error: error.message });
+            return res.status(500).json({ 
+                message: "Erro ao salvar os dados do investidor.", 
+                error: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
         }
 
         res.status(201).json({ message: "Dados do investidor salvos com sucesso!", data: data[0] });
@@ -55,4 +70,3 @@ const criarInvestidor = async (req, res) => {
 module.exports = {
     criarInvestidor
 };
-
