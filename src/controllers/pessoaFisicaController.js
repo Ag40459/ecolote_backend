@@ -11,6 +11,7 @@ const criarPessoaFisica = async (req, res) => {
     const {
         nome_completo,
         telefone,
+        email,
         modelo_imovel,
         outro_modelo_imovel,
         media_conta_energia,
@@ -25,7 +26,7 @@ const criarPessoaFisica = async (req, res) => {
     } = req.body;
 
     // Validação básica (pode ser expandida com uma biblioteca como Joi ou express-validator)
-    if (!nome_completo || !telefone || !modelo_imovel || !media_conta_energia || !cep || !rua || !numero || !bairro || !cidade || !estado || !pretensao_pagamento) {
+    if (!nome_completo || !telefone || !email|| !modelo_imovel || !media_conta_energia || !cep || !rua || !numero || !bairro || !cidade || !estado || !pretensao_pagamento) {
         return res.status(400).json({ message: "Todos os campos obrigatórios devem ser preenchidos." });
     }
 
@@ -40,6 +41,7 @@ const criarPessoaFisica = async (req, res) => {
                 {
                     nome_completo,
                     telefone,
+                    email,
                     modelo_imovel,
                     outro_modelo_imovel: modelo_imovel === "outro" ? outro_modelo_imovel : null,
                     media_conta_energia,
