@@ -2,7 +2,6 @@ const supabase = require("../config/supabaseClient");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Variáveis de ambiente para JWT
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key-for-dev-only";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
 
@@ -10,11 +9,6 @@ if (process.env.JWT_SECRET === "fallback-secret-key-for-dev-only" && process.env
     console.warn("AVISO: Usando chave JWT de fallback. Configure JWT_SECRET no seu arquivo .env para produção!");
 }
 
-/**
- * @route POST /api/admin/register
- * @description Registra um novo administrador.
- * @access Public (ou protegida por um super admin no futuro)
- */
 const registrarAdmin = async (req, res) => {
     const { nome_completo, email, senha } = req.body;
 
@@ -48,7 +42,7 @@ const registrarAdmin = async (req, res) => {
         const { data, error: insertError } = await supabase
             .from("administradores")
             .insert([{ nome_completo, email, senha_hash }])
-            .select("id, nome_completo, email, data_criacao"); // Alterado de created_at para data_criacao (conforme schema.sql para administradores)
+            .select("id, nome_completo, email, created_at");
 
         if (insertError) {
             console.error("Erro ao registrar administrador no Supabase:", insertError);
@@ -63,11 +57,6 @@ const registrarAdmin = async (req, res) => {
     }
 };
 
-/**
- * @route POST /api/admin/login
- * @description Autentica um administrador e retorna um token JWT.
- * @access Public
- */
 const loginAdmin = async (req, res) => {
     const { email, senha } = req.body;
 
@@ -117,11 +106,6 @@ const loginAdmin = async (req, res) => {
     }
 };
 
-/**
- * @route POST /api/admin/request-password-reset
- * @description Verifica se um email de administrador existe para redefinição de senha.
- * @access Public
- */
 const requestPasswordReset = async (req, res) => {
     const { email } = req.body;
 
@@ -153,12 +137,9 @@ const requestPasswordReset = async (req, res) => {
     }
 };
 
-
-// Funções para buscar dados dos formulários (protegidas)
 const buscarPessoasFisicas = async (req, res) => {
     try {
-        // Assumindo que pessoas_fisicas também usa data_criacao conforme schema.sql
-        const { data, error } = await supabase.from("pessoas_fisicas").select("*").order("data_criacao", { ascending: false });
+        const { data, error } = await supabase.from("pessoas_fisicas").select("*").order("created_at", { ascending: false });
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -169,10 +150,27 @@ const buscarPessoasFisicas = async (req, res) => {
 
 const buscarPessoasJuridicas = async (req, res) => {
     try {
-        // Corrigido para data_criacao conforme imagem da tabela
-        const { data, error } = await supabase.from("pessoas_juridicas").select("*").order("data_criacao", { ascending: false });
+        const { data, error } = await supabase
+            .from("pessoas_juridicas")
+            .select("*")
+            .order("created_at", { ascending: false });
+
         if (error) throw error;
-        res.json(data);
+
+        const pessoasJuridicasMapeadas = data.map(pj => ({
+            id: pj.id,
+            nome_empresa: pj.razao_social,
+            cnpj: pj.cnpj,
+            telefone: pj.telefone_comercial,
+            modelo_imovel: pj.tipo_imovel_comercial,
+            media_conta_energia: pj.media_conta_energia_pj,
+            cidade: pj.cidade_pj,
+            estado: pj.estado_pj,
+            pretensao_pagamento: pj.pretensao_pagamento_pj,
+            created_at: pj.created_at
+        }));
+
+        res.json(pessoasJuridicasMapeadas);
     } catch (error) {
         console.error("Erro ao buscar pessoas jurídicas:", error);
         res.status(500).json({ message: "Erro ao buscar dados de pessoas jurídicas.", error: error.message });
@@ -181,16 +179,30 @@ const buscarPessoasJuridicas = async (req, res) => {
 
 const buscarInvestidores = async (req, res) => {
     try {
-        // Corrigido para data_criacao conforme imagem da tabela
-        const { data, error } = await supabase.from("investidores").select("*").order("data_criacao", { ascending: false });
+        const { data, error } = await supabase
+            .from("investidores")
+            .select("*")
+            .order("created_at", { ascending: false });
+
         if (error) throw error;
-        res.json(data);
+
+        const investidoresMapeados = data.map(inv => ({
+            id: inv.id,
+            nome: inv.nome_investidor,
+            email: inv.email_investidor,
+            telefone: inv.telefone_investidor,
+            cidade: inv.cidade_investidor,
+            estado: inv.estado_investidor,
+            valor_investimento: inv.valor_interesse_investimento,
+            created_at: inv.created_at
+        }));
+
+        res.json(investidoresMapeados);
     } catch (error) {
         console.error("Erro ao buscar investidores:", error);
         res.status(500).json({ message: "Erro ao buscar dados de investidores.", error: error.message });
     }
 };
-
 
 module.exports = {
     registrarAdmin,
@@ -200,3 +212,4 @@ module.exports = {
     buscarPessoasJuridicas,
     buscarInvestidores
 };
+

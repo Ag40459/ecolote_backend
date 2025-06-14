@@ -68,16 +68,44 @@ const criarPessoaJuridica = async (req, res) => {
             .insert([insertData])
             .select(); // Retorna o registro inserido
 
-        if (error) {
-            console.error("Erro ao inserir pessoa jurídica no Supabase:", error);
-            return res.status(500).json({ 
-                message: "Erro ao salvar os dados da pessoa jurídica.", 
-                error: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
-        }
+       if (error) {
+    console.error("Erro ao inserir pessoa jurídica no Supabase:", error);
+
+    // Verifica se é erro de chave única duplicada
+   if (error) {
+    console.error("Erro ao inserir pessoa jurídica no Supabase:", error);
+
+    // Verifica se é erro de chave única duplicada (código 23505)
+    const isDuplicateKeyError = error.code === '23505' || (error.message && error.message.includes('duplicate key value'));
+    
+    if (isDuplicateKeyError) {
+        const constraintMatch = error.message?.match(/unique constraint "(.*?)"/);
+        const constraintName = constraintMatch ? constraintMatch[1] : null;
+
+        const mensagensAmigaveis = {
+            pessoas_juridicas_cnpj_key: "O CNPJ informado já está cadastrado. Por favor, verifique os dados.",
+            pessoas_juridicas_email_comercial_key: "O e-mail comercial informado já está em uso. Utilize outro e-mail.",
+        };
+
+        const mensagemAmigavel = mensagensAmigaveis[constraintName] || 
+            "Já existe um registro com as informações fornecidas.";
+
+        return res.status(409).json({
+            message: mensagemAmigavel
+        });
+    }
+
+    // Se não for erro de duplicidade
+    return res.status(500).json({
+        message: "Erro ao salvar os dados da pessoa jurídica.",
+        error: error.message || "Erro desconhecido",
+        details: error.details || null,
+        hint: error.hint || null,
+        code: error.code || null
+    });
+}
+}
+
 
         res.status(201).json({ message: "Dados da pessoa jurídica salvos com sucesso!", data: data[0] });
 

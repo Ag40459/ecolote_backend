@@ -1,5 +1,4 @@
 const express = require("express");
-console.log("DEBUG: Arquivo src/routes/adminRoutes.js está sendo executado.");
 const adminController = require("../controllers/adminController");
 const protegerRota = require("../middlewares/authMiddleware");
 

@@ -21,10 +21,6 @@ const criarInvestidor = async (req, res) => {
         estado // Será mapeado para estado_investidor
     } = req.body;
 
-    // Validação básica - Baseado no schema.sql e na imagem, os campos NOT NULL são:
-    // nome_investidor, email_investidor, telefone_investidor, tipo_investidor, valor_interesse_investimento
-    // cidade_investidor e estado_investidor foram adicionados e podem ser opcionais ou obrigatórios dependendo da sua regra de negócio.
-    // Vamos assumir que o frontend envia todos eles se forem parte do formulário.
     if (!nome || !email || !telefone || !valor_investimento || !cidade || !estado) {
         return res.status(400).json({ message: "Todos os campos obrigatórios (nome, email, telefone, tipo_investidor, valor_investimento, cidade, estado) devem ser preenchidos." });
     }

@@ -49,10 +49,10 @@ EXECUTE FUNCTION public.trigger_set_timestamp();
 CREATE TABLE IF NOT EXISTS public.pessoas_juridicas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     razao_social TEXT NOT NULL,
-    nome_fantasia TEXT,
+    nome_fantasia TEXT NOT NULL,
     cnpj TEXT NOT NULL UNIQUE,
     telefone_comercial TEXT NOT NULL,
-    email_comercial TEXT NOT NULL UNIQUE,
+    email_comercial TEXT NOT NULL,
     nome_responsavel TEXT NOT NULL,
     telefone_responsavel TEXT NOT NULL,
     tipo_imovel_comercial TEXT NOT NULL,
@@ -67,8 +67,9 @@ CREATE TABLE IF NOT EXISTS public.pessoas_juridicas (
     estado_pj TEXT NOT NULL,
     pretensao_pagamento_pj TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+    data_atualizacao TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
 
 COMMENT ON COLUMN public.pessoas_juridicas.outro_tipo_imovel_comercial IS 
     'Preenchido se tipo_imovel_comercial for ''outro''';
@@ -88,17 +89,17 @@ CREATE TABLE IF NOT EXISTS public.investidores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     nome_investidor TEXT NOT NULL,
     email_investidor TEXT NOT NULL UNIQUE,
-    telefone_investidor TEXT NOT NULL,
-    tipo_investidor TEXT,
+    telefone_investor TEXT,
+    tipo_investidor TEXT NOT NULL,
     area_interesse_principal TEXT,
-    valor_interesse_investimento TEXT NOT NULL,
+    valor_interesse_investimento TEXT,
     mensagem_investidor TEXT,
-    cidade_investidor TEXT,
-    estado_investidor TEXT,
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-    
+    data_atualizacao TIMESTAMPTZ DEFAULT now() NOT NULL,
+    cidade_investidor TEXT,
+    estado_investidor TEXT
 );
+
 
 CREATE INDEX IF NOT EXISTS idx_investidores_email ON public.investidores(email_investidor);
 
@@ -111,13 +112,14 @@ EXECUTE FUNCTION public.trigger_set_timestamp();
 -- 4. TABELA: administradores
 -- ================================================
 CREATE TABLE IF NOT EXISTS public.administradores (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     nome_completo TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL CHECK (email ~* '.+@ecolote\.com\.br$'),
+    email TEXT NOT NULL UNIQUE,
     senha_hash TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
 
 COMMENT ON TABLE public.administradores IS 
     'Tabela para armazenar os dados dos usuários administradores do sistema Ecolote.';
