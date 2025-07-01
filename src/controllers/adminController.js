@@ -10,14 +10,15 @@ if (process.env.JWT_SECRET === "fallback-secret-key-for-dev-only" && process.env
 }
 
 const registrarAdmin = async (req, res) => {
-    const { nome_completo, email, senha } = req.body;
+    const { nome_completo, email, senha, telefone, tipo_usuario } = req.body;
 
-    if (!nome_completo || !email || !senha) {
-        return res.status(400).json({ message: "Nome completo, email e senha são obrigatórios." });
+    if (!nome_completo || !email || !senha || !tipo_usuario) {
+        return res.status(400).json({ message: "Nome, email, senha e tipo de usuário são obrigatórios." });
     }
 
-    if (!email.endsWith("@ecolote.com.br")) {
-        return res.status(400).json({ message: "Email inválido. Apenas emails @ecolote.com.br são permitidos." });
+    // Mantém a restrição apenas para administradores
+    if (tipo_usuario === "administrador" && !email.endsWith("@ecolote.com.br")) {
+        return res.status(400).json({ message: "Email inválido. Apenas emails @ecolote.com.br são permitidos para administradores." });
     }
 
     try {
@@ -28,8 +29,8 @@ const registrarAdmin = async (req, res) => {
             .maybeSingle();
 
         if (selectError && selectError.code !== "PGRST116") {
-             console.error("Erro ao verificar email existente:", selectError);
-             return res.status(500).json({ message: "Erro ao verificar email.", error: selectError.message });
+            console.error("Erro ao verificar email existente:", selectError);
+            return res.status(500).json({ message: "Erro ao verificar email.", error: selectError.message });
         }
 
         if (existingAdmin) {
@@ -41,21 +42,30 @@ const registrarAdmin = async (req, res) => {
 
         const { data, error: insertError } = await supabase
             .from("administradores")
-            .insert([{ nome_completo, email, senha_hash }])
-            .select("id, nome_completo, email, created_at");
+            .insert([{
+                nome_completo,
+                email,
+                telefone,
+                senha_hash,
+                tipo_usuario,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }])
+            .select("id, nome_completo, email, telefone, tipo_usuario, created_at");
 
         if (insertError) {
-            console.error("Erro ao registrar administrador no Supabase:", insertError);
-            return res.status(500).json({ message: "Erro ao registrar o administrador.", error: insertError.message });
+            console.error("Erro ao registrar usuário no Supabase:", insertError);
+            return res.status(500).json({ message: "Erro ao registrar o usuário.", error: insertError.message });
         }
 
-        res.status(201).json({ message: "Administrador registrado com sucesso!", admin: data[0] });
+        res.status(201).json({ message: "Usuário registrado com sucesso!", usuario: data[0] });
 
     } catch (err) {
-        console.error("Erro inesperado no servidor ao registrar admin:", err);
+        console.error("Erro inesperado no servidor ao registrar usuário:", err);
         res.status(500).json({ message: "Ocorreu um erro inesperado no servidor." });
     }
 };
+
 
 const loginAdmin = async (req, res) => {
     const { email, senha } = req.body;
@@ -67,7 +77,7 @@ const loginAdmin = async (req, res) => {
     try {
         const { data: admin, error } = await supabase
             .from("administradores")
-            .select("id, email, senha_hash, nome_completo")
+            .select("id, email, senha_hash, nome_completo, tipo_usuario")
             .eq("email", email)
             .single();
 
@@ -84,7 +94,8 @@ const loginAdmin = async (req, res) => {
             admin: {
                 id: admin.id,
                 email: admin.email,
-                nome_completo: admin.nome_completo
+                nome_completo: admin.nome_completo,
+                tipo_usuario: admin.tipo_usuario
             }
         };
 
@@ -96,7 +107,8 @@ const loginAdmin = async (req, res) => {
             admin: {
                 id: admin.id,
                 email: admin.email,
-                nome_completo: admin.nome_completo
+                nome_completo: admin.nome_completo,
+                tipo_usuario: admin.tipo_usuario
             }
         });
 
@@ -204,12 +216,29 @@ const buscarInvestidores = async (req, res) => {
     }
 };
 
+const getAdminProfile = async (req, res) => {
+  try {
+    const admin = req.admin; // setado pelo middleware de autenticação JWT
+
+    if (!admin) {
+      return res.status(401).json({ message: "Não autorizado" });
+    }
+
+    // Retorna os dados do admin logado
+    res.json(admin);
+  } catch (err) {
+    console.error("Erro em /admin/me", err);
+    res.status(500).json({ message: "Erro interno do servidor" });
+  }
+};
+
 module.exports = {
     registrarAdmin,
     loginAdmin,
     requestPasswordReset,
     buscarPessoasFisicas,
     buscarPessoasJuridicas,
-    buscarInvestidores
+    buscarInvestidores,
+    getAdminProfile
 };
 

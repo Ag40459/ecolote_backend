@@ -1,13 +1,16 @@
 const express = require("express");
+const router = express.Router();
 const adminController = require("../controllers/adminController");
 const protegerRota = require("../middlewares/authMiddleware");
 
-const router = express.Router();
 
 // Rotas públicas de admin (ex: login, talvez registro inicial se não for interno)
 router.post("/register", adminController.registrarAdmin);
 router.post("/login", adminController.loginAdmin);
-router.post("/request-password-reset", adminController.requestPasswordReset); // Nova rota
+router.post("/request-password-reset", adminController.requestPasswordReset); 
+
+// Rota protegida para pegar dados do admin logado (usada pelo AuthContext)
+router.get("/me", protegerRota, adminController.getAdminProfile); 
 
 // Rotas protegidas de admin para visualização de dados
 router.get("/data/pessoas-fisicas", protegerRota, adminController.buscarPessoasFisicas);

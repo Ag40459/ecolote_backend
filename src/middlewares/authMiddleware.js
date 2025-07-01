@@ -5,14 +5,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key-for-dev-only";
  * Middleware para verificar o token JWT e proteger rotas.
  */
 const protegerRota = (req, res, next) => {
-    // Obter o token do header Authorization
     const authHeader = req.header("Authorization");
 
     if (!authHeader) {
         return res.status(401).json({ message: "Acesso negado. Nenhum token fornecido." });
     }
 
-    // O token geralmente vem no formato "Bearer <token>"
     const tokenParts = authHeader.split(" ");
     if (tokenParts.length !== 2 || tokenParts[0] !== "Bearer") {
         return res.status(401).json({ message: "Token malformado." });
@@ -26,8 +24,8 @@ const protegerRota = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.admin = decoded.admin; // Adiciona os dados do admin decodificados ao objeto da requisição
-        next(); // Passa para o próximo middleware ou rota
+        req.user = decoded; // Armazena os dados do usuário decodificados no objeto da requisição
+        next();
     } catch (ex) {
         console.error("Erro na verificação do token:", ex.message);
         if (ex.name === "TokenExpiredError") {
@@ -39,6 +37,7 @@ const protegerRota = (req, res, next) => {
         res.status(400).json({ message: "Token inválido ou expirado." });
     }
 };
+
 
 module.exports = protegerRota;
 
